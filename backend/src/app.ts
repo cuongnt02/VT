@@ -1,6 +1,8 @@
 import { join } from "node:path";
 import AutoLoad, { AutoloadPluginOptions } from "@fastify/autoload";
 import { FastifyPluginAsync, FastifyServerOptions } from "fastify";
+import cors from "@fastify/cors";
+import { db, initDb } from "./db";
 
 export interface AppOptions
   extends FastifyServerOptions,
@@ -13,6 +15,20 @@ const app: FastifyPluginAsync<AppOptions> = async (
   opts,
 ): Promise<void> => {
   // Place here your custom code!
+  //
+  //await fastify.register(drizzleDb);
+  initDb();
+  fastify.decorate("db", db);
+
+  await fastify.register(cors, {
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "OPTIONS"],
+    hook: "onRequest",
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    maxAge: 86400,
+    preflight: true,
+  });
 
   // Do not touch the following lines
 
