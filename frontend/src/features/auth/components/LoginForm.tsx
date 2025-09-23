@@ -70,17 +70,16 @@ export default function LoginForm() {
 	)
 
 	async function onSubmit(values: z.infer<typeof loginFormSchema>) {
-		console.log(values)
 		// TODO: Add these values to a post data
 		const user: User = { id: uuidv6().toString(), username: values['username'], password: values['password'] }
 		// TODO: Post the data to the api endpoint
-		await fetch('http://localhost:3000/api/user', {
+		await fetch('http://localhost:3000/auth/login', {
 			headers: {
-				'content-type': 'application/json',
+				'Content-Type': 'application/json',
 			},
 			method: 'POST',
 			body: JSON.stringify(user)
-		}).then(response => response.json)
+		}).then(response => response.json())
 			.then(body => console.log('Got response: ', body))
 	}
 }
