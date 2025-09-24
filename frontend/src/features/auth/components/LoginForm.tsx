@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form";
 import { z } from "zod"
 import { v6 as uuidv6 } from "uuid"
+import { useState } from "react";
+import LoadingSpinner from "@/features/common/Loading";
 
 const loginFormSchema = z.object({
 	username: z.string().min(8, {
@@ -21,6 +23,7 @@ const loginFormSchema = z.object({
 })
 
 export default function LoginForm() {
+	const [isLoading, setIsLoading] = useState(false)
 	const form = useForm<z.infer<typeof loginFormSchema>>({
 		resolver: zodResolver(loginFormSchema),
 		defaultValues: {
@@ -64,23 +67,30 @@ export default function LoginForm() {
 
 					)}
 				/>
-				<Button type="submit" className="w-full text-lg">Submit</Button>
+				<Button type="submit" className="w-full text-lg">{isLoading ? (<LoadingSpinner className="" />) : ("Submit")}</Button>
 			</form>
 		</Form>
 	)
 
 	async function onSubmit(values: z.infer<typeof loginFormSchema>) {
-		// TODO: Add these values to a post data
+		// TODO: Remove id field
 		const user: User = { id: uuidv6().toString(), username: values['username'], password: values['password'] }
-		// TODO: Post the data to the api endpoint
-		await fetch('http://localhost:3000/auth/login', {
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			method: 'POST',
-			body: JSON.stringify(user)
-		}).then(response => response.json())
-			.then(body => console.log('Got response: ', body))
+		setIsLoading(true)
+		try {
+			const response = await fetch('http://localhost:3000/auth/login', {
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				method: 'POST',
+				body: JSON.stringify(user)
+			})
+			const data = await response.json()
+			console.log("Got response: ", data)
+		} catch (error) {
+			console.log("Error: Fetching failed")
+		} finally {
+			setIsLoading(false)
+		}
 	}
 }
 
