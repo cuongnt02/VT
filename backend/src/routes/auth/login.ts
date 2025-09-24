@@ -1,6 +1,8 @@
 import { FastifyPluginAsync } from "fastify";
 import { UserRequest } from "../../types/user";
 import * as argon2 from "argon2";
+import { setTimeout } from "node:timers/promises";
+import { LoginResponse, LoginResponseType } from "../../types/api/login";
 
 const login: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
   fastify.get("/login", async function (request, reply) {
@@ -13,39 +15,57 @@ const login: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       schema: {
         body: UserRequest,
         response: {
-          200: {},
+          200: LoginResponse,
         },
       },
     },
     async (request, reply) => {
-      // TODO: Determine if this would throw any errors
       const { username, password } = request.body;
-      // TODO: Verify request body
 
       const user = await fastify.db.user.findByUsername(username);
+      await setTimeout(3000);
 
       if (user) {
         try {
-          const hashed_password = await argon2.hash(password, {
-            type: argon2.argon2id,
-            memoryCost: 19456,
-            parallelism: 1,
-            timeCost: 2,
-            secret: Buffer.from(user.password_salt, "hex"),
-          });
-          console.log("SALT:", user.password_salt);
-          console.log("PASS:", hashed_password);
-          console.log("PASS_DB:", user.password);
-          if (await argon2.verify(hashed_password, password)) {
-            console.log("Login successful");
+          if (
+            await argon2.verify(user.password, password, {
+              secret: Buffer.from(user.password_salt, "hex"),
+            })
+          ) {
+            reply.status(200);
+            // TODO: Create function to handle tokens
+            const response: LoginResponseType = {
+              message: "Login successful",
+              session_token: "",
+              refresh_token: "",
+              user: user,
+            };
+            reply.send(response);
           } else {
-            console.log("Login failed");
+            reply.status(401);
+            const error = new Error(
+              "Login unsuccessful - You have entered an invalid password",
+            );
+            reply.send(error);
           }
         } catch (err) {
-          console.log(err);
+          if (err instanceof Error) {
+            reply.send(err);
+          } else {
+            const unexpected = new Error(
+              "Unexpected Error Occurred - Check the server logs for more details",
+            );
+            reply.send(unexpected);
+          }
         }
+      } else {
+        // TODO: DRY Here - Create function to handle
+        reply.status(401);
+        const error = new Error(
+          "Login unsuccessful - You have entered an invalid username",
+        );
+        reply.send(error);
       }
-      reply.status(200).send({ login: "success" });
     },
   );
 };
