@@ -6,8 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form";
 import { z } from "zod"
 import { v6 as uuidv6 } from "uuid"
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoadingSpinner from "@/features/common/Loading";
+import { useNavigate } from "react-router";
 
 const loginFormSchema = z.object({
 	username: z.string().min(8, {
@@ -23,7 +24,10 @@ const loginFormSchema = z.object({
 })
 
 export default function LoginForm() {
-	const [isLoading, setIsLoading] = useState(false)
+	const navigate = useNavigate()
+	const [isLoading, setIsLoading] = useState<boolean>(false)
+	const [message, setMessage] = useState<string>("")
+	const [loggedIn, setLoggedIn] = useState<boolean>(false)
 	const form = useForm<z.infer<typeof loginFormSchema>>({
 		resolver: zodResolver(loginFormSchema),
 		defaultValues: {
@@ -32,8 +36,14 @@ export default function LoginForm() {
 		}
 	})
 
+	useEffect(() => {
+		if (loggedIn) navigate('/')
+	}, [loggedIn, navigate])
+
 	return (
 		<Form {...form}>
+			{message &&
+				(<p className="text-center leading-7 [&:not(:first-child)]:mt-6 text-red-500">{message}</p>)}
 			<form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8"	>
 				<FormField
 					control={form.control}
@@ -44,6 +54,7 @@ export default function LoginForm() {
 							<FormControl>
 								<Input placeholder="Enter your username" {...field} />
 							</FormControl>
+							{/* TODO: Remove redundant description */}
 							<FormDescription>
 								This is your public display name
 							</FormDescription>
@@ -61,6 +72,7 @@ export default function LoginForm() {
 							<FormControl>
 								<Input type="password" {...field} />
 							</FormControl>
+							{/* TODO: Remove redundant description */}
 							<FormDescription>A strong password for your security</FormDescription>
 							<FormMessage />
 						</FormItem>
@@ -85,12 +97,21 @@ export default function LoginForm() {
 				body: JSON.stringify(user)
 			})
 			const data = await response.json()
-			console.log("Got response: ", data)
+			if (!response.ok) {
+				flashMessage(data.message)
+			}
+			else {
+				setLoggedIn(true)
+			}
 		} catch (error) {
 			console.log("Error: Fetching failed")
 		} finally {
 			setIsLoading(false)
 		}
+	}
+
+	function flashMessage(message: string) {
+		setMessage(message)
 	}
 }
 

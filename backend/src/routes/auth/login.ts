@@ -3,6 +3,7 @@ import { UserRequest } from "../../types/user";
 import * as argon2 from "argon2";
 import { setTimeout } from "node:timers/promises";
 import { LoginResponse, LoginResponseType } from "../../types/api/login";
+import { createHash, randomBytes } from "node:crypto";
 
 const login: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
   fastify.get("/login", async function (request, reply) {
@@ -68,6 +69,21 @@ const login: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       }
     },
   );
+};
+
+const generateTokens = (): { session_token; refresh_token } => {
+  const sessionToken = createHash("sha-256")
+    .update(randomBytes(12))
+    .digest("hex");
+
+  const refreshToken = createHash("sha-256")
+    .update(randomBytes(12))
+    .digest("hex");
+
+  return {
+    session_token: sessionToken,
+    refresh_token: refreshToken,
+  };
 };
 
 export default login;
