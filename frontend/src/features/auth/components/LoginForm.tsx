@@ -88,26 +88,6 @@ export default function LoginForm() {
 		// TODO: Remove id field
 		const user: User = { id: uuidv6().toString(), username: values['username'], password: values['password'] }
 		setIsLoading(true)
-		try {
-			const response = await fetch('http://localhost:3000/auth/login', {
-				headers: {
-					'Content-Type': 'application/json',
-				},
-				method: 'POST',
-				body: JSON.stringify(user)
-			})
-			const data = await response.json()
-			if (!response.ok) {
-				flashMessage(data.message)
-			}
-			else {
-				setLoggedIn(true)
-			}
-		} catch (error) {
-			console.log("Error: Fetching failed")
-		} finally {
-			setIsLoading(false)
-		}
 	}
 
 	function flashMessage(message: string) {
